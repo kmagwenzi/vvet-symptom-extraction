@@ -1,0 +1,18 @@
+{"id": "s1", "message": "My cow has not been eating since yesterday and she is breathing very fast.", "expected": {"reduced_appetite": "yes", "rapid_breathing": "yes"}, "escalate": false}
+{"id": "s2", "message": "There's foam coming from her nose and she can't get up.", "expected": {"froth_nose_mouth": "yes", "unable_to_stand": "yes"}, "escalate": true}
+{"id": "s3", "message": "I think the eyes look a bit cloudy but I'm not sure. She has mbandabvu under the ear.", "expected": {"cloudy_eye": "not_sure", "swelling": "yes"}, "escalate": true}
+{"id": "s4", "message": "The calf is fine, just lots of ticks on the ears.", "expected": {"ticks": "yes"}, "escalate": false}
+{"id": "s5", "message": "Mombe yangu haisi kudya, and her urine is dark like tea.", "expected": {"reduced_appetite": "yes", "red_urine": "yes"}, "escalate": false}
+{"id": "n1", "message": "The vet checked her: no froth, no ticks, and she can stand.", "expected": {"froth_nose_mouth": "no", "ticks": "no", "unable_to_stand": "no"}, "escalate": false}
+{"id": "m1", "message": "She is weak and lying down all day, and I saw ticks on her.", "expected": {"weakness": "yes", "ticks": "yes"}, "escalate": false}
+{"id": "m2", "message": "Her eyes are white and milky. She cannot stand.", "expected": {"cloudy_eye": "yes", "unable_to_stand": "yes"}, "escalate": true}
+{"id": "m3", "message": "The goat has a lump under the jaw.", "expected": {"swelling": "yes"}, "escalate": false}
+{"id": "m4", "message": "Her urine is red like blood.", "expected": {"red_urine": "yes"}, "escalate": false}
+{"id": "m5", "message": "She is panting even when she is resting.", "expected": {"rapid_breathing": "yes"}, "escalate": false}
+{"id": "m6", "message": "The animal is fine today, thank you.", "expected": {}, "escalate": false}
+{"id": "u1", "message": "Maybe she has froth? I am not sure.", "expected": {"froth_nose_mouth": "not_sure"}, "escalate": true}
+{"id": "m7", "message": "Two cows are dull and not grazing.", "expected": {"weakness": "yes", "reduced_appetite": "yes"}, "escalate": false}
+{"id": "m8", "message": "Her eye looks milky and she has foam at the mouth.", "expected": {"cloudy_eye": "yes", "froth_nose_mouth": "yes"}, "escalate": true}
+{"id": "sh1", "message": "Hapana ticks paari, asi ari kuneta.", "expected": {"ticks": "no", "weakness": "yes"}, "escalate": false}
+{"id": "m9", "message": "She cannot get up, there is froth from her nose and her eyes are white.", "expected": {"unable_to_stand": "yes", "froth_nose_mouth": "yes", "cloudy_eye": "yes"}, "escalate": true}
+{"id": "sh2", "message": "Mombe yangu haisi kudya uye haagone kumira.", "expected": {"reduced_appetite": "yes", "unable_to_stand": "yes"}, "escalate": true}
