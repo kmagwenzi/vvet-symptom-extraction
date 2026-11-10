@@ -50,7 +50,7 @@ curl -s localhost:8000/extract -H 'Content-Type: application/json' \
 Tests and the offline evaluation:
 
 ```bash
-pytest                                    # 46 tests, no network, no key
+pytest                                    # 50 tests, no network, no key
 python scripts/evaluate.py --extractor rule --show-errors
 ```
 
@@ -128,6 +128,10 @@ failure. So it survives as `not_sure` and the caller is told why in `reason`. A 
 paraphrases a real emergency cannot switch the alarm off; the cost is a false alarm when it
 invents one outright, and I would rather pay that. `tests/test_samples.py` pins this behaviour
 down, including a model that hallucinates foam.
+
+The same rule has a cost, and it is worth naming: a model that reports `no` for a critical sign
+with a quote that is not in the message gets repaired to `not_sure`, so a healthy animal can raise
+an alarm. I would rather explain a false alarm to a vet than explain a missed downed animal.
 
 **5. A hedged `yes` becomes `not_sure`.** If the quote contains "I think", "maybe", "not sure",
 "ndinofunga", "pamwe", the value is downgraded. Deterministic safety net under the model's
@@ -236,6 +240,15 @@ watch, and it is zero.
   a total miss, and today those two look identical. That is the first thing I would fix (see below).
 - **The baseline is coarse.** It quotes the whole sentence rather than the phrase, and it misses
   Shona vocabulary outside the list I wrote. The model path produces tighter quotes.
+- **The baseline's regexes over-trigger.** `ziso` (Shona for "eye") fires `cloudy_eye` on any eye
+  mention, `saliva` and `spit` fire `froth_nose_mouth`, and `ticks?` has no word boundary so
+  "sticks" matches. Every one of those escalates rather than misses, so the direction is right —
+  but they are false alarms, and they are listed here rather than tuned away.
+- **A paraphrased `no` on a critical sign escalates.** If the model reports `unable_to_stand = no`
+  with a quote that is not in the message ("she is standing" when the message says "the cow is up
+  and walking fine"), grounding fails and the finding is repaired to `not_sure`. That is the trade
+  in Decision 4, stated plainly: a false alarm on a healthy animal is the price of never silencing
+  a real one.
 - **No retry on malformed model output.** One bad JSON answer is a 502. A single retry that feeds
   the parser error back would recover most of these.
 - **Shona coverage is thin.** `haisi kudya`, `mbandabvu`, `haagone kumira`, `yakasviba`, `kuneta`
@@ -281,13 +294,19 @@ ungrounded *critical* finding as `not_sure` instead of deleting it; downgrading 
 deciding escalation in a pure function; and shipping the baseline so the model has something to be
 measured against.
 
-Two bugs the tests caught, both worth knowing about because they are the kind that survive review:
+Three bugs the tests caught, all worth knowing about because they are the kind that survive review:
 
 - `model_dump()` on a `str`-Enum returns `SignID.ticks`, not `ticks`, so validation silently
   rejected every finding and the API returned an empty list with a 200. `mode="json"` fixed it.
 - The negation rule read text before the match, which meant "not eating" — the *positive* form of
   reduced_appetite — would have marked itself absent. Looking only backwards from the match kept it
   positive, and that is why the rule now has a comment saying so.
+- A 30-character lookback is a *window*, not a clause. "No foam from the nose but she cannot
+  stand." read the "No" across the "but" and returned `unable_to_stand = no`, so a downed animal
+  did not escalate — the one cell the table calls dangerous. Negation is now bounded by the nearest
+  clause boundary (`but`, `however`, `though`, `although`, `;`, `,`), and the rule extractor can no
+  longer emit `no` on a critical sign at all: it falls back to `not_sure`. Two mechanisms, one
+  direction — toward the alarm. `tests/test_rule_negation.py` pins the exact sentence.
 
 You can run `pytest` and `python scripts/evaluate.py` and see all of this for yourself in about
 thirty seconds. I would rather be quizzed on the decisions than on the prose.

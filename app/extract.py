@@ -18,7 +18,7 @@ from typing import Protocol
 from app.llm import LLMClient
 from app.prompt import build_messages
 from app.schema import Finding, SignID, SignValue
-from app.signs import SIGN_IDS
+from app.signs import CRITICAL_SIGN_IDS, SIGN_IDS
 from app.validate import UNCERTAINTY_CUES, clean_findings, findings_from_model, normalise
 
 
@@ -155,13 +155,25 @@ def _hedged(window: str) -> bool:
     return any(cue in lowered for cue in UNCERTAINTY_CUES)
 
 
-def _negated(window: str, rel: int) -> bool:
-    """True when a negation word sits just before the match inside its sentence.
+# A clause boundary stops a negation from reaching across it. "No foam from
+# the nose but she cannot stand." must not let "No" cancel "cannot stand" —
+# "but" is a wall, not a window. Comma and semicolon are walls too.
+_CLAUSE_BOUNDARY = re.compile(
+    r"[,;]|(?<![a-z])(?:although|though|however|but)(?![a-z])", re.IGNORECASE
+)
 
-    Only text *before* the match counts, so "not eating" stays a positive
-    finding for reduced_appetite instead of negating itself.
+
+def _negated(window: str, rel: int) -> bool:
+    """True when a negation word sits between the nearest clause boundary and the match.
+
+    Only text before the match counts, and only within its own clause, so
+    "not eating" stays a positive finding for reduced_appetite while a "no" in
+    an earlier clause cannot cancel a later one.
     """
-    return bool(_NEGATION.search(window[max(0, rel - 30) : rel]))
+    before = window[:rel]
+    boundaries = [m.end() for m in _CLAUSE_BOUNDARY.finditer(before)]
+    start = boundaries[-1] if boundaries else 0
+    return bool(_NEGATION.search(before[start:]))
 
 
 class RuleExtractor:
@@ -183,6 +195,11 @@ class RuleExtractor:
                         value = "not_sure"
                     elif _negated(window, rel):
                         value = "no"
+                    if value == "no" and sign_id in CRITICAL_SIGN_IDS:
+                        # A regex baseline must never cancel an alarm. A critical
+                        # sign that only looks negated becomes not_sure, so the
+                        # cheap mistake is a needless call, not a dead animal.
+                        value = "not_sure"
                     finding = Finding(
                         sign_id=SignID(sign_id), value=SignValue(value), quote=window
                     )
