@@ -47,6 +47,10 @@ curl -s localhost:8000/extract -H 'Content-Type: application/json' \
 }
 ```
 
+That is a **real model answer**, captured on 2026-11-10 through `POST /extract` with `EXTRACTOR=llm`
+against `deepseek-chat` — not a mock. `GET /health` reports `"extractor": "llm"` when it is the model
+answering, so you never have to guess which path produced a response.
+
 Tests and the offline evaluation:
 
 ```bash
@@ -217,6 +221,44 @@ quote grounding: 28/28 (100%) of returned quotes appear in the source message
 What the table *is* good for: it proves the pipeline works end to end, that escalation catches
 every emergency in the set, and that it never invents a quote. The dangerous cell is the one to
 watch, and it is zero.
+
+### The model, on the same cases
+
+Captured **2026-11-10** against `deepseek-chat`, same 18 cases, real API calls — not a scripted mock:
+
+```
+extractor: llm   cases: 18
+
+sign                     P     R     F1   support
+----------------------------------------------
+reduced_appetite      1.00  1.00   1.00   4
+weakness              1.00  1.00   1.00   3
+swelling              1.00  1.00   1.00   2
+rapid_breathing       1.00  1.00   1.00   2
+cloudy_eye            1.00  1.00   1.00   4
+froth_nose_mouth      1.00  1.00   1.00   5
+red_urine             1.00  1.00   1.00   2
+unable_to_stand       1.00  1.00   1.00   5
+ticks                 1.00  1.00   1.00   4
+
+escalation
+  caught (escalate, was an emergency) : 7
+  missed (no escalation, was one)     : 0   <- the dangerous cell
+  false alarm                         : 0
+  correctly quiet                     : 11
+
+quote grounding: 31/31 (100%) of returned quotes appear in the source message
+```
+
+The model is cleaner than the baseline on every sign, and the gap is the interesting part: the
+baseline's misses are **vocabulary**, not reasoning — `"she can stand"`, `"ari kuneta"` (tired),
+`"eyes are white"` are phrasings no regex I wrote anticipated. The model handled all three without
+being told.
+
+**Every caveat above applies twice as hard here.** A perfect score on 18 cases I also wrote is
+evidence that the pipeline works end to end — validation, grounding, escalation, serialisation —
+not evidence that the model generalises. The measurement section below is what would actually
+change my mind.
 
 **The measurement I would actually trust, in order of how much it would change my mind:**
 
