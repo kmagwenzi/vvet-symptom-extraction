@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
+
 from fastapi import Depends, FastAPI, HTTPException
 
 from app import __version__
@@ -12,10 +14,18 @@ from app.schema import ExtractRequest, ExtractResponse
 from app.signs import SIGN_IDS, critical_list
 from app.validate import ExtractionError
 
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    """Fail fast on a bad EXTRACTOR value instead of 500-ing on every request."""
+    get_extractor()
+    yield
+
+
 app = FastAPI(
     title="V-Vet symptom extraction",
     version=__version__,
     description="Turns a farmer's WhatsApp message into structured clinical findings.",
+    lifespan=lifespan,
 )
 
 

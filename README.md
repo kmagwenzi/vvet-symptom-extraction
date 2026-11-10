@@ -50,7 +50,7 @@ curl -s localhost:8000/extract -H 'Content-Type: application/json' \
 Tests and the offline evaluation:
 
 ```bash
-pytest                                    # 50 tests, no network, no key
+pytest                                    # 52 tests, no network, no key
 python scripts/evaluate.py --extractor rule --show-errors
 ```
 
@@ -144,6 +144,14 @@ reports the same sign twice with different certainty, the stronger one wins for 
 mentions is simply absent from `findings`. "The calf is fine" is not evidence of eight negative
 findings — inferring those would put words in the farmer's mouth, and the task says to report
 only what is mentioned.
+
+One asymmetry, stated because it is a real collision between this decision and Decision 2: the
+**rule baseline** never reports `no` on a critical sign — it reports `not_sure`. A keyword regex
+cannot tell "no foam" (reassuring) from a clause it has mis-parsed, so on the three signs where
+being wrong is expensive, the alarm wins. The **model path** still returns `no` when the quote is
+grounded. But `EXTRACTOR=rule` is precisely what a reviewer runs without a key, so the honest
+summary is: on the baseline, a message that denies all three critical signs raises an alarm; on the
+model, it does not.
 
 **8. Validation runs at the boundary, not only inside the extractor.** `enforce_contract` re-runs
 the same checks on whatever an extractor produced. Belt and braces, and it means the contract
@@ -244,6 +252,11 @@ watch, and it is zero.
   mention, `saliva` and `spit` fire `froth_nose_mouth`, and `ticks?` has no word boundary so
   "sticks" matches. Every one of those escalates rather than misses, so the direction is right —
   but they are false alarms, and they are listed here rather than tuned away.
+- **Explicit negations of critical signs escalate on the baseline.** "No foam, no cloudy eyes,
+  she is just off her food" raises an alarm under `EXTRACTOR=rule`, because the rule path reports
+  `not_sure` on the three critical signs rather than `no` (see Decision 7). The model path does
+  not. This is the cost of the second safety layer, and it is exactly the kind of thing a clinic
+  would tune against real message volume.
 - **A paraphrased `no` on a critical sign escalates.** If the model reports `unable_to_stand = no`
   with a quote that is not in the message ("she is standing" when the message says "the cow is up
   and walking fine"), grounding fails and the finding is repaired to `not_sure`. That is the trade

@@ -157,9 +157,10 @@ def _hedged(window: str) -> bool:
 
 # A clause boundary stops a negation from reaching across it. "No foam from
 # the nose but she cannot stand." must not let "No" cancel "cannot stand" —
-# "but" is a wall, not a window. Comma and semicolon are walls too.
+# "but" is a wall, not a window. Comma, semicolon and "and" are walls too —
+# "Not eating and breathing fast" must not read "Not" as negating the breathing.
 _CLAUSE_BOUNDARY = re.compile(
-    r"[,;]|(?<![a-z])(?:although|though|however|but)(?![a-z])", re.IGNORECASE
+    r"[,;]|(?<![a-z])(?:although|though|however|but|and)(?![a-z])", re.IGNORECASE
 )
 
 

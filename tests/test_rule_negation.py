@@ -40,3 +40,27 @@ def test_rule_extractor_never_cancels_a_critical_alarm():
 def test_negation_within_its_own_clause_still_negates_non_critical():
     r = RuleExtractor().extract("She is not weak and can stand fine.")
     assert values(r).get("weakness") == "no"
+
+
+def test_negation_stops_at_and():
+    # "Not eating" is a positive finding for reduced_appetite; the "and" must
+    # stop that "Not" reaching the breathing clause.
+    r = RuleExtractor().extract("Not eating and breathing fast.")
+    v = values(r)
+    assert v["reduced_appetite"] == "yes"
+    assert v["rapid_breathing"] == "yes"
+
+
+def test_explicit_negation_on_a_critical_sign_escalates_on_purpose():
+    """The documented cost of the safety net, pinned so it cannot drift.
+
+    A regex cannot tell "no foam" (reassuring) from a mis-parsed clause, so the
+    rule path reports not_sure rather than no on the three critical signs. That
+    is a false alarm on a healthy animal, accepted deliberately.
+    """
+    r = RuleExtractor().extract("No foam, no cloudy eyes, she is just off her food.")
+    v = values(r)
+    assert v["froth_nose_mouth"] == "not_sure"
+    assert v["cloudy_eye"] == "not_sure"
+    escalate, _ = decide_escalation(r.findings)
+    assert escalate is True
